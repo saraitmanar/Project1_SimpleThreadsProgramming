@@ -1,0 +1,19 @@
+Manar Alhamad - Report 
+a) experience installing nachos : I used FIU Ocelot server (Red Hat, gcc 8.5.0, make 4.2.1)  and created a directory for Nachos. I also downloaded nachos-3.4-linux.tar.gz and extracted it. First, I ran into dependency issues because of old gcc include paths. I fixed this by running "make clean" and removing the dependency files. Overall, the installation was simple and worked smoothly after fixing those minor issues.
+b) experience with tests: I tested Nachos in both the threads and userprog directories. In code/threads, running ./nachos produced the expected alternating output from thread 0 and thread 1 looping from 0 through 4 before halting. In code/userprog I ran ./nachos -x ../test/halt, which executed the halt user program correctly. The system halted and displayed the machine statistics. Both tests matched the expected results described in the project instructions given.
+c) description of thread class : The Thread class in Nachos represents a kernel-level thread. It stores the thread’s execution state, its stack, and the function it is supposed to run. The class provides operations such as Fork (to start running a function in a new thread), Yield (to voluntarily give up the CPU), Sleep (to block the thread), and Finish (to end execution). It works with the Scheduler to manage context switches, allowing multiple threads to share the CPU and execute concurrently in a controlled way.
+
+
+Deijen Severino - Report
+
+Experience installing nachos - My experience with installing nachos was straightforward. I followed the instructions on the project 0 TA notes and was able to successfully download nachos.
+Experience with test - I ran the threads demo and got the correct expected output as shown in the project 0 description. It also shows the machine halting message as well as the ticks,I/O, and paging. Running the userprog demo produced the expected output from source code.
+Description of thread class - The thread class is foundational for multithreading within Nachos. Threads share the same address space with other threads while at the same time, keeps thread specific elements like execution status, cpu registers, and stack, private to each instance.
+
+
+Dorreen Vahidiazar - Report
+
+Experience installing nachos: completed on ocelot server (CentOs 8). The nachos 3.4 complied after making some changes in Makefile. The threads/Makefile contained some dependencies pointing to GCC 3.3.3 path. I removed these dependencies and ran make depend which regenerated the dependencies. Once these steps were done nachos ran successfully to make CC=gcc CXX=g++.
+Experience with test: In the threads directory, I built Nachos and ran the demo with ./nachos. I got the same output as presented in the files for this assignment. In the userprog directory, I recompiled and ran ./nachos -x ../test/halt for which again I got the expected outcome. 
+Thread class: The thread class in nachos is basically a single thread of execution within the kernel. It stores many key information and an identifier for debugging. It interacts with a scheduler which has threads in a line and decides which to run. In other words, the Thread class defines how nachos manages and executes threads.
+
