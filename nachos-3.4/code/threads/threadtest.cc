@@ -11,6 +11,7 @@
 
 #include "copyright.h"
 #include "system.h"
+int SharedVariable = 0;
 
 // testnum is set in main.cc
 int testnum = 1;
@@ -24,16 +25,19 @@ int testnum = 1;
 //	purposes.
 //----------------------------------------------------------------------
 
-void
-SimpleThread(int which)
-{
-    int num;
-    
-    for (num = 0; num < 5; num++) {
-	printf("*** thread %d looped %d times\n", which, num);
-        currentThread->Yield();
-    }
+void SimpleThread(int which) {
+int num, val;
+for(num = 0; num < 5; num++) {
+val = SharedVariable;
+printf("*** thread %d sees value %d\n", which, val);
+currentThread->Yield();
+SharedVariable = val+1;
+currentThread->Yield();
 }
+val = SharedVariable;
+printf("Thread %d sees final value %d\n", which, val);
+}
+
 
 //----------------------------------------------------------------------
 // ThreadTest1
@@ -60,13 +64,10 @@ ThreadTest1()
 void
 ThreadTest(int n)
 {
-    switch (testnum) {
-    case 1:
-	ThreadTest1();
-	break;
-    default:
-	printf("No test specified.\n");
-	break;
+    for (int i = 1; i <= n; i++) {
+        Thread *t = new Thread("forked thread");
+        t->Fork(SimpleThread, i);
     }
+    SimpleThread(0);  
 }
 

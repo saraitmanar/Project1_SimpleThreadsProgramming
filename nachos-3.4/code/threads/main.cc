@@ -59,7 +59,7 @@ extern int testnum;
 
 // External functions used by this file
 
-extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
+extern void ThreadTest(int n), Copy(char *unixFile, char *nachosFile);
 extern void Print(char *file), PerformanceTest(void);
 extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
@@ -88,20 +88,19 @@ main(int argc, char **argv)
     (void) Initialize(argc, argv);
     
 #ifdef THREADS
-    for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
-      argCount = 1;
-      switch (argv[0][1]) {
-      case 'q':
-        testnum = atoi(argv[1]);
-        argCount++;
-        break;
-      default:
-        testnum = 1;
-        break;
-      }
-    }
+    int n = 1;
 
-    ThreadTest();
+    for (int i = 1; i < argc; i++) {
+    if (!strcmp(argv[i], "-N") && i + 1 < argc) {
+        n = atoi(argv[i+1]);
+    }
+    else if (!strcmp(argv[i], "-q") && i + 1 < argc) {
+        testnum = atoi(argv[i+1]);
+    }
+}
+
+    // run the threads test with your n
+    ThreadTest(n);
 #endif
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
