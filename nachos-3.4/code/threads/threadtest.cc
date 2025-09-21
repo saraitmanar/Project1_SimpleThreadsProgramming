@@ -30,7 +30,6 @@ int num, val;
 for(num = 0; num < 5; num++) {
 val = SharedVariable;
 printf("*** thread %d sees value %d\n", which, val);
-currentThread->Yield();
 SharedVariable = val+1;
 currentThread->Yield();
 }
