@@ -11,6 +11,8 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "synch.h"
+
 
 // testnum is set in main.cc
 int testnum = 1;
@@ -23,6 +25,15 @@ int testnum = 1;
 //	"which" is simply a number identifying the thread, for debugging
 //	purposes.
 //----------------------------------------------------------------------
+
+//test for Lock 
+void LockTest() {
+    printf("Starting LockTest...\n");
+    Lock *myLock = new Lock("test lock");
+    printf("Created lock: %s\n", myLock->getName());
+    delete myLock;
+    printf("Deleted lock\n");
+}
 
 void
 SimpleThread(int which)
@@ -64,6 +75,9 @@ ThreadTest(int n)
     case 1:
 	ThreadTest1();
 	break;
+    case 2:
+    LockTest();
+    break;
     default:
 	printf("No test specified.\n");
 	break;
