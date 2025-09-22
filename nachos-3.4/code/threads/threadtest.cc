@@ -11,13 +11,12 @@
 
 #include "copyright.h"
 #include "system.h"
+#include "synch.h"
 int SharedVariable = 0;
 
 #ifdef HW1_SEMAPHORES
-Semaphore *sharedVarSemaphore = NULL;
-Semaphore *barrierSemaphore = NULL;
-int totalThreads =0;
-int threadsCompleted = 0;
+Semaphore * sharedVar = new Semaphore("sharedVar", 1);
+Semaphore * barrierSem = new Semaphore("barrierSem", 1);
 #endif
 
 // testnum is set in main.cc
@@ -34,48 +33,40 @@ int testnum = 1;
 
 void SimpleThread(int which) {
 int num, val;
+for(num = 0; num < 5; num++) {
 
 #ifdef HW1_SEMAPHORES
-    if (which == 0 && sharedVarSemaphore == NULL){
-        sharedVarSemaphore = new Semaphore("SharedVarSemaphore", 1);
-        barrierSemaphore = new Semaphore("BarrierSemaphore", 0);
-        totalThreads = testnum + 1;  // +1 for the main thread (thread 0)
-    }
+    //enter
+sharedVar->P();
 #endif
 
-    for(num = 0; num < 5; num++) {
-        val = SharedVariable;
+val = SharedVariable;
+printf("*** thread %d sees value %d\n", which, val);
+currentThread->Yield();
+SharedVariable = val+1;
 
 #ifdef HW1_SEMAPHORES
-        sharedVarSemaphore->P();
+sharedVar->V();
+    //exit
 #endif
 
-        printf("*** thread %d sees value %d\n", which, val);
-        SharedVariable = val+1;
-
+currentThread->Yield();
+}
 #ifdef HW1_SEMAPHORES
-        sharedVarSemaphore->V();
+sharedVar->P(); // protect numThreadsActive
+numThreadsActive--;
+if (numThreadsActive == 0) {
+    barrierSem->V(); // release the barrier
+}
+sharedVar->V();
+
+barrierSem->P(); // wait on the barrier
+barrierSem->V(); // release for others
 #endif
-        currentThread->Yield();
-    }
 
-    val = SharedVariable;
-    printf("Thread %d sees final value %d\n", which, val);
 
-#ifdef HW1_SEMAPHORES
-    sharedVarSemaphore->P();
-    threadsCompleted++;
-
-    if(threadsCompleted == totalThreads) {
-        for (int i = 0; i < totalThreads - 1; i++){
-        barrierSemaphore-V();
-    }
-    threadsCompleted = 0;
-    } else {
-        sharedVarSemaphore->V();
-        barrierSemaphore-P();
-    }
-#endif
+val = SharedVariable;
+printf("Thread %d sees final value %d\n", which, val);
 }
 
 
@@ -100,25 +91,27 @@ ThreadTest1()
 // ThreadTest
 // 	Invoke a test routine.
 //----------------------------------------------------------------------
+#ifdef HW1_SEMAPHORES
+
+int numThreadsActive; // used to implement barrier upon completion
+
+void ThreadTest(int n){
+    DEBUG('t', "Entering SimpleTest");
+    numThreadsActive = n;
+    printf("NumthreadsActive = %d\n", numThreadsActive);
+
+    for (int i = 1; i <= n; i++) {
+        Thread *t = new Thread("forked thread");
+        t->Fork(SimpleThread, i);
+    }
+    SimpleThread(0);
+}
+
+#else
 
 void
 ThreadTest(int n)
 {
-#ifdef HW1_SEMAPHORES
-    sharedVairable = 0;
-    threadsCompleted =0;
-    totalThreads = n + 1;
-
-    if(sharedVarSemaphore !=NULL){
-        delete sharedVarSemaphore;
-        sharedVarSemaphore = NULL;
-    }
-    if (barrierSemaphore != NULL){
-        delete barrierSemaphore;
-        barrierSemaphore = NULL;
-    }
-#endif
-
     for (int i = 1; i <= n; i++) {
         Thread *t = new Thread("forked thread");
         t->Fork(SimpleThread, i);
@@ -126,3 +119,4 @@ ThreadTest(int n)
     SimpleThread(0);  
 }
 
+#endif
