@@ -65,23 +65,18 @@ class Semaphore {
 
 class Lock {
   public:
-    Lock(const char* debugName);  		// initialize lock to be FREE
-    ~Lock();				// deallocate lock
-    char* getName() { return name; }	// debugging assist
+    Lock(const char* debugName);
+    ~Lock();
+    char* getName() { return name; }
 
-    void Acquire(); // these are the only operations on a lock
-    void Release(); // they are both *atomic*
-
-    bool isHeldByCurrentThread();	// true if the current thread
-					// holds this lock.  Useful for
-					// checking in Release, and in
-					// Condition variable ops below.
+    void Acquire();
+    void Release();
+    bool isHeldByCurrentThread();   // <-- declaration ONLY
 
   private:
-    char* name;				// for debugging
-    Semaphore *semaphore;	
+    char* name;
+    Semaphore *semaphore;
     Thread *owner;
-    // plus some other stuff you'll need to define
 };
 
 // The following class defines a "condition variable".  A condition

@@ -100,19 +100,35 @@ Semaphore::V()
 // Dummy functions -- so we can compile our later assignments 
 // Note -- without a correct implementation of Condition::Wait(), 
 // the test case in the network assignment won't work!
+
 Lock::Lock(const char* debugName) {
     name = new char[strlen(debugName)+1];
     strcpy(name, debugName);
     semaphore = new Semaphore("lock semaphore", 1);
     owner = NULL;
 }
+
 Lock::~Lock() {
     delete semaphore;
     delete[] name;
 }
-void Lock::Acquire() {}
-void Lock::Release() {}
 
+void Lock::Acquire() {
+    ASSERT(!isHeldByCurrentThread());   // can’t re-acquire by same thread
+    semaphore->P();                     // wait until lock is free
+    owner = currentThread;              // mark who owns the lock
+}
+
+void Lock::Release() {
+    ASSERT(isHeldByCurrentThread());    // only owner can release
+    owner = NULL;
+    semaphore->V();                     // free the lock
+}
+
+bool Lock::isHeldByCurrentThread() {
+        return (owner == currentThread);
+
+}
 Condition::Condition(const char* debugName) { }
 Condition::~Condition() { }
 void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }

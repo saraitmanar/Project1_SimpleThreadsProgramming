@@ -27,13 +27,13 @@ int testnum = 1;
 //----------------------------------------------------------------------
 
 //test for Lock 
-void LockTest() {
-    printf("Starting LockTest...\n");
-    Lock *myLock = new Lock("test lock");
-    printf("Created lock: %s\n", myLock->getName());
-    delete myLock;
-    printf("Deleted lock\n");
-}
+// void LockTest() {
+//     printf("Starting LockTest...\n");
+//     Lock *myLock = new Lock("test lock");
+//     printf("Created lock: %s\n", myLock->getName());
+//     delete myLock;
+//     printf("Deleted lock\n");
+// }
 
 void
 SimpleThread(int which)
@@ -67,6 +67,9 @@ ThreadTest1()
 // ThreadTest
 // 	Invoke a test routine.
 //----------------------------------------------------------------------
+#ifdef HW1_LOCKS
+void LockTest();   // tells compiler it exists
+#endif
 
 void
 ThreadTest(int n)
@@ -84,3 +87,30 @@ ThreadTest(int n)
     }
 }
 
+#ifdef HW1_LOCKS
+static Lock *testLock = new Lock((char*)"testLock");
+
+void LockTestThread(int which) {
+    printf("Thread %d: trying to acquire lock\n", which);
+    testLock->Acquire();
+    printf("Thread %d: inside critical section\n", which);
+
+    for (int i = 0; i < 3; i++) currentThread->Yield();
+
+    printf("Thread %d: releasing lock\n", which);
+    testLock->Release();
+}
+
+void LockTest() {
+    for (int i = 1; i <= 3; i++) {
+        Thread *t = new Thread("lock tester");
+        t->Fork(LockTestThread, i);
+    }
+    LockTestThread(0);  // main thread also tries
+}
+#endif
+
+
+void ThreadTest() {
+    ThreadTest(0);   // n isn’t used for the lock test anyway
+}
