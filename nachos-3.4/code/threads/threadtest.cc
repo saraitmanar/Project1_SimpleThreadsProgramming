@@ -12,7 +12,7 @@
 #include "copyright.h"
 #include "system.h"
 #include "synch.h"
-
+int SharedVariable = 0;
 
 // testnum is set in main.cc
 int testnum = 1;
@@ -35,15 +35,42 @@ int testnum = 1;
 //     printf("Deleted lock\n");
 // }
 
-void
-SimpleThread(int which)
-{
-    int num;
-    
-    for (num = 0; num < 5; num++) {
-	printf("*** thread %d looped %d times\n", which, num);
-        currentThread->Yield();
-    }
+void SimpleThread(int which) {
+int num, val;
+for(num = 0; num < 5; num++) {
+
+#ifdef HW1_LOCKS
+    //enter
+testLock->Acquire();
+#endif
+
+val = SharedVariable;
+printf("*** thread %d sees value %d\n", which, val);
+currentThread->Yield();
+SharedVariable = val+1;
+
+#ifdef HW1_LOCKS
+testLock->Release();
+    //exit
+#endif
+
+currentThread->Yield();
+}
+#ifdef HW1_LOCKS
+testLock->Acquire(); // protect numThreadsActive
+numThreadsActive--;
+if (numThreadsActive == 0) {
+    barrierSem->V(); // release the barrier
+}
+testLock->Release();
+
+barrierSem->P(); // wait on the barrier
+barrierSem->V(); // release for others
+#endif
+
+
+val = SharedVariable;
+printf("Thread %d sees final value %d\n", which, val);
 }
 
 //----------------------------------------------------------------------
