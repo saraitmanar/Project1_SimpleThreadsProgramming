@@ -129,8 +129,16 @@ bool Lock::isHeldByCurrentThread() {
         return (owner == currentThread);
 
 }
-Condition::Condition(const char* debugName) { }
-Condition::~Condition() { }
+Condition::Condition(const char* debugName) { 
+    name = new char [strlen(debugName) +1];
+    strcpy(name, debugName);
+
+    queue = new List;
+}
+Condition::~Condition() {
+    delete queue;
+    delete [] name;
+ }
 void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
 void Condition::Signal(Lock* conditionLock) { }
 void Condition::Broadcast(Lock* conditionLock) { }
