@@ -139,6 +139,12 @@ Condition::~Condition() {
     delete queue;
     delete [] name;
  }
-void Condition::Wait(Lock* conditionLock) { ASSERT(FALSE); }
+void Condition::Wait(Lock* conditionLock) {
+	ASSERT(conditionLock->isHeldByCurrentThread());
+    conditionLock->Release();
+    queue->Append((void *)currentThread);
+    currentThread->Sleep();
+    conditionLock->Acquire();
+}
 void Condition::Signal(Lock* conditionLock) { }
 void Condition::Broadcast(Lock* conditionLock) { }
