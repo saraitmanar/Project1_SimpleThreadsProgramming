@@ -1,0 +1,16 @@
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/main.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/list.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/scheduler.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/synch.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/synchlist.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/system.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/thread.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/utility.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../threads/threadtest.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../machine/interrupt.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../machine/stats.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../machine/sysdep.cc
+gcc -g -Wall -Wshadow -m32 -I../threads -I../machine -DTHREADS -DHOST_i386 -DCHANGED  -c ../machine/timer.cc
+gcc -m32 -E -P -I../threads -I../machine -DHOST_i386 ../threads/switch.c > swtch.s
+as --32 -o switch.o swtch.s
+g++ -m32 main.o list.o scheduler.o synch.o synchlist.o system.o thread.o utility.o threadtest.o interrupt.o stats.o sysdep.o timer.o switch.o  -o nachos

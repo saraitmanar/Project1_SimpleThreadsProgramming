@@ -146,5 +146,27 @@ void Condition::Wait(Lock* conditionLock) {
     currentThread->Sleep();
     conditionLock->Acquire();
 }
-void Condition::Signal(Lock* conditionLock) { }
-void Condition::Broadcast(Lock* conditionLock) { }
+void Condition::Signal(Lock* conditionLock) {
+    ASSERT(conditionLock->isHeldByCurrentThread());
+
+    IntStatus oldLevel = interrupt->SetLevel(IntOff); // disable interrupts
+
+    Thread *t = (Thread *)queue->Remove();  // take one thread off waiting queue
+    if (t != NULL) {
+        scheduler->ReadyToRun(t);           // put thread back on ready list
+    }
+
+    (void) interrupt->SetLevel(oldLevel);
+ }
+void Condition::Broadcast(Lock* conditionLock) {
+    ASSERT(conditionLock->isHeldByCurrentThread());
+
+    IntStatus oldLevel = interrupt->SetLevel(IntOff); // disable interrupts
+
+    Thread *t;
+    while ((t = (Thread *)queue->Remove()) != NULL) {
+        scheduler->ReadyToRun(t);           // ready every waiting thread
+    }
+
+    (void) interrupt->SetLevel(oldLevel);
+ }
