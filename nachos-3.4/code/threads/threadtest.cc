@@ -12,6 +12,11 @@
 #include "copyright.h"
 #include "system.h"
 #include "synch.h"
+#ifdef HW1_ELEVATOR
+#include "elevator.h"
+#include "elevatorTest.cc"
+#endif
+
 
 
 // testnum is set in main.cc
@@ -78,9 +83,11 @@ ThreadTest(int n)
     case 1:
 	ThreadTest1();
 	break;
+    #ifdef HW1_LOCKS
     case 2:
     LockTest();
     break;
+    #endif
     default:
 	printf("No test specified.\n");
 	break;
@@ -110,7 +117,14 @@ void LockTest() {
 }
 #endif
 
-
+#ifndef HW1_ELEVATOR
 void ThreadTest() {
-    ThreadTest(0);   // n isn’t used for the lock test anyway
+    ThreadTest(0);
 }
+#else
+void ThreadTest() {
+    Elevator(10);
+}
+#endif
+
+
