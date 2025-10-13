@@ -57,6 +57,10 @@
 extern int testnum;
 #endif
 
+#ifdef HW1_ELEVATOR
+#include "elevator.h"
+#endif
+
 // External functions used by this file
 
 extern void ThreadTest(void), Copy(char *unixFile, char *nachosFile);
@@ -102,6 +106,13 @@ main(int argc, char **argv)
     }
 
     ThreadTest();
+#endif
+
+#ifdef HW1_ELEVATOR
+    Elevator(10);
+    ArrivingGoingFromTo(1, 7);
+    ArrivingGoingFromTo(3, 9);
+    ArrivingGoingFromTo(5, 2);
 #endif
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
