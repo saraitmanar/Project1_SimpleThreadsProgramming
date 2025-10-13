@@ -274,8 +274,6 @@ E_spawnerActive = false;
 
 void ThreadTest() {
 #ifdef HW1_ELEVATOR
-    ElevatorTest(10, 6);
-#else
     ThreadTest(0);
 #endif
 }
