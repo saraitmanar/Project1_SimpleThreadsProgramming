@@ -34,48 +34,6 @@ void ThreadTest1()
     SimpleThread(0);
 }
 
-#ifdef HW1_LOCKS
-void LockTest(); 
-#endif
-
-void ThreadTest(int n)
-{
-    switch (testnum) {
-        case 1:
-            ThreadTest1();
-            break;
-#ifdef HW1_LOCKS
-        case 2:
-            LockTest();
-            break;
-#endif
-        default:
-            printf("No test specified.\n");
-            break;
-    }
-}
-
-#ifdef HW1_LOCKS
-static Lock *testLock = new Lock((char*)"testLock");
-
-void LockTestThread(int which) {
-    printf("Thread %d: trying to acquire lock\n", which);
-    testLock->Acquire();
-    printf("Thread %d: inside critical section\n", which);
-    for (int i = 0; i < 3; i++) currentThread->Yield();
-    printf("Thread %d: releasing lock\n", which);
-    testLock->Release();
-}
-
-void LockTest() {
-    for (int i = 1; i <= 3; i++) {
-        Thread *t = new Thread((char*)"lock tester");
-        t->Fork(LockTestThread, i);
-    }
-    LockTestThread(0);
-}
-#endif
-
 #ifdef HW1_ELEVATOR
 
 static const int E_CAPACITY = 5;
@@ -86,15 +44,13 @@ static int   E_numFloors = 0;
 static int   E_currentFloor = 1;
 static bool  E_doorsOpen = false;
 static int   E_onboard = 0;
-static bool E_spawnerActive = false;
+static bool  E_spawnerActive = false;
 
 static Semaphore* floorArriveSem[MAX_FLOORS+1];
 static Semaphore* spaceSem = new Semaphore((char*)"space", 0);
 
 static int waitingAt[MAX_FLOORS+1];
 static int wantOffAt[MAX_FLOORS+1];
-
-static int  E_totalPeople = 0;
 
 struct PersonArgs {
     int id;
@@ -153,11 +109,6 @@ static void PersonMain(int arg) {
     wantOffAt[to]--;
     printf("Person %d got out of the elevator.\n", id);
     spaceSem->V();
-
-  if (E_totalPeople > 0) {
-    E_totalPeople--;
-    
-}
     E_lock->Release();
 
     delete p;
@@ -169,10 +120,6 @@ void ArrivingGoingFromTo(int atFloor, int toFloor) {
     if (toFloor < 1) toFloor = 1;
     if (atFloor > E_numFloors) atFloor = E_numFloors;
     if (toFloor > E_numFloors) toFloor = E_numFloors;
-
-    E_lock->Acquire();
-    E_totalPeople++;
-    E_lock->Release();
 
     static int nextId = 0;
     PersonArgs* p = new PersonArgs;
@@ -219,11 +166,11 @@ static void ElevatorMain(int) {
         E_lock->Acquire();
         E_doorsOpen = false;
 
-       int pending = E_onboard;
-for (int f = 1; f <= E_numFloors; f++) {
-    pending += waitingAt[f] + wantOffAt[f];
-}
-bool shouldStop = (!E_spawnerActive && pending == 0);
+        bool anyWaiting = (E_onboard > 0);
+        for (int f = 1; f <= E_numFloors && !anyWaiting; f++) {
+            if (waitingAt[f] > 0 || wantOffAt[f] > 0) anyWaiting = true;
+        }
+        bool shouldStop = (!E_spawnerActive && !anyWaiting);
 
         E_lock->Release();
 
@@ -255,7 +202,6 @@ void Elevator(int numFloors) {
 }
 
 void ElevatorTest(int numFloors, int numPersons) {
-
     E_spawnerActive = true;
     Elevator(numFloors);
 
@@ -267,13 +213,15 @@ void ElevatorTest(int numFloors, int numPersons) {
         for (int j = 0; j < 1000000; j++) { currentThread->Yield(); }
     }
 
-E_spawnerActive = false;
+    E_spawnerActive = false;
 }
-
 #endif
 
-void ThreadTest() {
+void ThreadTest(int n)
+{
 #ifdef HW1_ELEVATOR
-    ThreadTest(0);
+    ElevatorTest(10, (n > 0 ? n : 3));
+#else
+    ThreadTest1();
 #endif
 }

@@ -55,10 +55,19 @@
 
 #ifdef THREADS
 extern int testnum;
+extern void ThreadTest1(void);
+#endif
+
+#ifdef HW1_LOCKS
+extern void LockTest(void);
 #endif
 
 #ifdef HW1_ELEVATOR
 #include "elevator.h"
+#endif
+
+#ifdef HW1_THREADTEST
+extern void ThreadTest(int);
 #endif
 
 // External functions used by this file
@@ -67,6 +76,7 @@ extern void ThreadTest(int n), Copy(char *unixFile, char *nachosFile);
 extern void Print(char *file), PerformanceTest(void);
 extern void StartProcess(char *file), ConsoleTest(char *in, char *out);
 extern void MailTest(int networkID);
+extern void LockTest(void);
 
 //----------------------------------------------------------------------
 // main
@@ -92,27 +102,26 @@ main(int argc, char **argv)
     (void) Initialize(argc, argv);
     
 #ifdef THREADS
-    int n = 1;
+  #if defined(HW1_LOCKS)
+    LockTest();
 
-    for (int i = 1; i < argc; i++) {
-    if (!strcmp(argv[i], "-N") && i + 1 < argc) {
-        n = atoi(argv[i+1]);
-    }
-    else if (!strcmp(argv[i], "-q") && i + 1 < argc) {
-        testnum = atoi(argv[i+1]);
-    }
-}
-
-    // run the threads test with your n
-    ThreadTest(n);
-#endif
-
-#ifdef HW1_ELEVATOR
+  #elif defined(HW1_ELEVATOR)
     Elevator(10);
     ArrivingGoingFromTo(1, 7);
     ArrivingGoingFromTo(3, 9);
     ArrivingGoingFromTo(5, 2);
+
+  #elif defined(HW1_THREADTEST)
+    int n = 1;
+    for (int i = 1; i < argc; i++) {
+      if (!strcmp(argv[i], "-N") && i + 1 < argc) n = atoi(argv[i+1]);
+      else if (!strcmp(argv[i], "-q") && i + 1 < argc) testnum = atoi(argv[i+1]);
+    }
+    ThreadTest(n);   // <— ONLY here
+  #endif
 #endif
+
+
 
     for (argc--, argv++; argc > 0; argc -= argCount, argv += argCount) {
 	argCount = 1;
