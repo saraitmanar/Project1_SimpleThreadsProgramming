@@ -88,7 +88,7 @@ class Thread {
 					// is called
 
     // basic thread operations
-
+    
     void Fork(VoidFunctionPtr func, int arg); 	// Make thread run (*func)(arg)
     void Yield();  				// Relinquish the CPU if any 
 						// other thread is runnable
@@ -127,6 +127,7 @@ class Thread {
     void RestoreUserState();		// restore user-level register state
 
     AddrSpace *space;			// User code this thread is running.
+        int spaceId;  
 #endif
 };
 

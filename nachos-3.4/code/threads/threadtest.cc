@@ -15,7 +15,7 @@
 #include "system.h"
 #include "synch.h"
 
-int testnum = 1;   // used by stock nachos samples if needed
+int testnum = 1;   
 
 // -------------------------------
 // Exercise 1: shared variable test
@@ -25,7 +25,7 @@ int testnum = 1;   // used by stock nachos samples if needed
 static int SharedValue = 0;
 
 #ifdef HW1_SEMAPHORES
-static Semaphore *mutex = NULL;  // created in ThreadTest()
+static Semaphore *mutex = NULL;  
 #endif
 
 void SimpleThread(int which) {
@@ -37,7 +37,6 @@ void SimpleThread(int which) {
         currentThread->Yield();
         SharedValue = val + 1;
 #else
-        // SYNCHRONIZED version using a semaphore as a mutex
         mutex->P();
         int val = SharedValue;
         printf("*** thread %d sees value %d\n", which, val);
@@ -124,7 +123,6 @@ static void PersonMain(int arg) {
     waitingAt[at]++;
     E_lock->Release();
 
-    // wait for elevator to arrive at 'at'
     floorArriveSem[at]->P();
 
     // board when doors open and capacity allows
@@ -140,7 +138,6 @@ static void PersonMain(int arg) {
     printf("Person %d got into the elevator.\n", id);
     E_lock->Release();
 
-    // wait for 'to'
     floorArriveSem[to]->P();
 
     E_lock->Acquire();
@@ -195,11 +192,9 @@ static void ElevatorMain(int) {
         E_lock->Acquire();
         E_doorsOpen = true;
 
-        // wake people waiting to get on/off here
         for (int i = 0; i < waitingAt[E_currentFloor]; i++) floorArriveSem[E_currentFloor]->V();
         for (int i = 0; i < wantOffAt[E_currentFloor]; i++) floorArriveSem[E_currentFloor]->V();
 
-        // advertise space up to capacity
         for (int i = 0; i < E_CAPACITY; i++) spaceSem->V();
 
         E_lock->Release();
@@ -257,11 +252,8 @@ void ElevatorTest(int numFloors, int numPersons) {
 
     E_spawnerActive = false;
 }
-#endif // HW1_ELEVATOR
+#endif 
 
-// ---------------------------------------
-// Unified entry called by main: ThreadTest
-// ---------------------------------------
 void ThreadTest(int n) {
 #ifdef HW1_ELEVATOR
     if (n < 1) n = 3;
@@ -271,6 +263,5 @@ void ThreadTest(int n) {
     LaunchThreads(n);
 
 #else
-    // fallback: do nothing here for other configurations
 #endif
 }

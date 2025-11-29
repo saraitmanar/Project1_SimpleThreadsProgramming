@@ -1,0 +1,9 @@
+Project 1 report:
+
+Manar Alhamad, Deijen Severino, Dorreen Vahidiazar
+
+exercise 1: (unsynchronized) We made multiple threads update the same variable without any protection to see how race conditions happen - done
+exercise 1: (semaphores) We added a semaphore to fix the race condition and make sure only one thread changes the value at a time - done
+exercise 2: (locks) We created and tested a lock so threads take turns entering the critical section and no two run it together - done
+exercise 3: (conditions) We implemented the missing Condition class functions using locks and semaphores to synchronize waiting and signaling between threads - done
+exercise 4: (elevator) We created a multithreaded elevator simulation using locks and semaphores to coordinate people boarding, riding, and exiting safely - done
