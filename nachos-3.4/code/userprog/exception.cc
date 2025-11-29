@@ -25,6 +25,16 @@
 #include "system.h"
 #include "syscall.h"
 
+static void
+AdvancePC()
+{
+    int pc = machine->ReadRegister(PCReg);
+    int nextPC = machine->ReadRegister(NextPCReg);
+
+    machine->WriteRegister(PrevPCReg, pc);
+    machine->WriteRegister(PCReg, nextPC);
+    machine->WriteRegister(NextPCReg, nextPC + 4);
+}
 //----------------------------------------------------------------------
 // ExceptionHandler
 // 	Entry point into the Nachos kernel.  Called when a user program
@@ -51,13 +61,29 @@
 void
 ExceptionHandler(ExceptionType which)
 {
-    int type = machine->ReadRegister(2);
+    int type = machine->ReadRegister(2);   // r2 = syscall code
 
-    if ((which == SyscallException) && (type == SC_Halt)) {
-	DEBUG('a', "Shutdown, initiated by user program.\n");
-   	interrupt->Halt();
+    if (which == SyscallException) {
+        switch (type) {
+            case SC_Halt:
+                DEBUG('a', "Shutdown, initiated by user program.\n");
+                interrupt->Halt();
+                break;
+
+            case SC_Yield:
+                // User-level Yield(): just yield the current Nachos thread
+                currentThread->Yield();
+                AdvancePC();  // important: move past the Yield() instruction
+                break;
+
+            // other syscalls (Exit, Exec, Join, Fork, etc.) will go here later
+
+            default:
+                printf("Unexpected system call %d\n", type);
+                ASSERT(FALSE);
+        }
     } else {
-	printf("Unexpected user mode exception %d %d\n", which, type);
-	ASSERT(FALSE);
+        printf("Unexpected user mode exception %d %d\n", which, type);
+        ASSERT(FALSE);
     }
 }
