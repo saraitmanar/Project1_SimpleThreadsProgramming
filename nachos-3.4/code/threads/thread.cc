@@ -40,8 +40,12 @@ Thread::Thread(const char* threadName)
     status = JUST_CREATED;
 #ifdef USER_PROGRAM
     space = NULL;
-    spaceId = -1; // initialize to “no pid”
+    spaceId = -1;                       // “no pid” initially
+    exitCode = 0;                       // default exit status
+    joinSem = new Semaphore((char*)"joinSem", 0);  // used for Join()
+    waitingThread = NULL;               // no one is waiting yet
 #endif
+
 }
 
 //----------------------------------------------------------------------
@@ -150,6 +154,12 @@ Thread::Finish ()
     DEBUG('t', "Finishing thread \"%s\"\n", getName());
     
     threadToBeDestroyed = currentThread;
+
+    #ifdef USER_PROGRAM
+    if (waitingThread != NULL) {
+        waitingThread->joinSem->V(); // wake Join()
+    }
+#endif
     Sleep();					// invokes SWITCH
     // not reached
 }

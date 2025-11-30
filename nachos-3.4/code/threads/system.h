@@ -23,6 +23,7 @@ extern void Cleanup();				// Cleanup, called when
 						// Nachos is done.
 
 extern Thread *currentThread;			// the thread holding the CPU
+extern Thread *threadArray[MaxThreads];
 extern Thread *threadToBeDestroyed;  		// the thread that just finished
 extern Scheduler *scheduler;			// the ready list
 extern Interrupt *interrupt;			// interrupt status
