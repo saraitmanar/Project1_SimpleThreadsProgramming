@@ -47,17 +47,47 @@
 //	"which" is the kind of exception.  The list of possible exceptions 
 //	are in machine.h.
 //----------------------------------------------------------------------
+extern void do_Exit(int status);
 
 void
 ExceptionHandler(ExceptionType which)
 {
-    int type = machine->ReadRegister(2);
+    int type = machine->ReadRegister(2);   // r2 = syscall code
 
-    if ((which == SyscallException) && (type == SC_Halt)) {
-	DEBUG('a', "Shutdown, initiated by user program.\n");
-   	interrupt->Halt();
+    if (which == SyscallException) {
+
+        switch (type) {
+
+        case SC_Halt:
+            DEBUG('a', "Shutdown, initiated by user program.\n");
+            interrupt->Halt();
+            break;
+
+        case SC_Yield:
+            // User-level Yield(): just yield the current Nachos thread
+            currentThread->Yield();
+            AdvancePC();   // move past the Yield() syscall
+            break;
+
+        case SC_Exit:
+        {
+        int status = machine->ReadRegister(4);
+        DEBUG('a', "System Call: [%d] invoked Exit\n", /*CHANGE: pid access*/);
+        do_Exit(status);
+        AdvancePC(); // AdvancePC if do_Exit returns; but do_Exit normally Finish()s
+        break;
+        }
+        }
+
+        // other syscalls (Exit, Exec, Fork, etc.) go here later
+
+        default:
+            printf("Unexpected system call %d\n", type);
+            ASSERT(FALSE);
+        }
+
     } else {
-	printf("Unexpected user mode exception %d %d\n", which, type);
-	ASSERT(FALSE);
+        printf("Unexpected user mode exception %d %d\n", which, type);
+        ASSERT(FALSE);
     }
 }
