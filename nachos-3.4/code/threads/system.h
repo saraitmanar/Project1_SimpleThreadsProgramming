@@ -50,3 +50,7 @@ extern PostOffice* postOffice;
 #endif
 
 #endif // SYSTEM_H
+#ifdef USER_PROGRAM
+#include "../userprog/memorymanager.h"
+extern MemoryManager *memoryManager;
+#endif

@@ -19,6 +19,11 @@ Statistics *stats;			// performance metrics
 Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 
+#ifdef USER_PROGRAM
+#include "../userprog/memorymanager.h"
+MemoryManager *memoryManager = NULL;
+#endif
+
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -149,7 +154,9 @@ Initialize(int argc, char **argv)
     
 #ifdef USER_PROGRAM
     machine = new Machine(debugUserProg);	// this must come first
+    memoryManager = new MemoryManager(NumPhysPages);
 #endif
+
 
 #ifdef FILESYS
     synchDisk = new SynchDisk("DISK");

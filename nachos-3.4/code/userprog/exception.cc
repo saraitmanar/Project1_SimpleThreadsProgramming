@@ -47,17 +47,54 @@
 //	"which" is the kind of exception.  The list of possible exceptions 
 //	are in machine.h.
 //----------------------------------------------------------------------
+static void
+AdvancePC()
+{
+    int pc = machine->ReadRegister(PCReg);
+    int nextPC = machine->ReadRegister(NextPCReg);
+
+    machine->WriteRegister(PrevPCReg, pc);
+    machine->WriteRegister(PCReg, nextPC);
+    machine->WriteRegister(NextPCReg, nextPC + 4);
+}
+int do_Fork(int funcAddr)
+{
+    // TEMPORARY stub – real Fork logic will come later
+    printf("System Call: [?] invoked Fork (stub), funcAddr = 0x%x\n", funcAddr);
+
+    return -1;   // Later this will be the child's PID
+}
 
 void
 ExceptionHandler(ExceptionType which)
 {
-    int type = machine->ReadRegister(2);
+    int type = machine->ReadRegister(2);   // syscall code in r2
 
-    if ((which == SyscallException) && (type == SC_Halt)) {
-	DEBUG('a', "Shutdown, initiated by user program.\n");
-   	interrupt->Halt();
+    if (which == SyscallException) {
+
+        switch (type) {
+
+        case SC_Halt:
+            DEBUG('a', "Shutdown, initiated by user program.\n");
+            interrupt->Halt();
+            break;
+
+        case SC_Fork: {
+            int funcAddr = machine->ReadRegister(4); // argument in r4
+            int pid = do_Fork(funcAddr);             // call our temporary fork stub
+            machine->WriteRegister(2, pid);          // return value in r2
+            AdvancePC();                              // prevent syscall loop
+            break;
+        }
+
+        default:
+            printf("Unexpected system call %d\n", type);
+            ASSERT(FALSE);
+        }
+
     } else {
-	printf("Unexpected user mode exception %d %d\n", which, type);
-	ASSERT(FALSE);
+        printf("Unexpected user mode exception %d %d\n", which, type);
+        ASSERT(FALSE);
     }
 }
+
