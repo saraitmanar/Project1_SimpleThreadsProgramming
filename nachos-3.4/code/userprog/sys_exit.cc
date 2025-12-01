@@ -6,35 +6,26 @@
 
 void do_Exit(int status)
 {
-    int myPid = currentThread->space->pid; // CHANGE THIS IF NEEDED
-   
+    int myPid = currentThread->space->pid;   // CHANGE THIS IF NEEDED
 
 
-    PCB *pcb = processManager->getPCB(myPid); // CHANGE THIS IF NEEDED
-   
-
-
+    PCB *pcb = processManager->getPCB(myPid);  // CHANGE THIS IF NEEDED
     if (pcb == NULL) {
-        printf("ERROR: Exit(): PCB missing for pid %d\n", myPid);
+        printf("ERROR: Exit(): no PCB for pid %d\n", myPid);
         currentThread->Finish();
         return;
     }
 
 
-    printf("Process %d exits with %d\n", myPid, status);
+    pcb->exited = true;        // CHANGE THIS IF NEEDED
+    pcb->exitStatus = status;
 
 
-    pcb->waitLock->Acquire(); // CHANGE THIS IF NEEDED
-
-
-    pcb->exited = true; // CHANGE THIS IF NEEDED
-
-
-    pcb->exitStatus = status; // CHANGE THIS IF NEEDED
+    pcb->waitLock->Acquire();  // CHANGE THIS IF NEEDED
 
 
     // --------------------------------------------------------
-    // 1. Remove process as parent from all children
+    // 1. Handle children
     // --------------------------------------------------------
     for (ListElement *e = pcb->children.First(); e != NULL; e = e->next) {
         int childPid = (int)(intptr_t)e->item;
@@ -42,62 +33,55 @@ void do_Exit(int status)
 
         PCB *child = processManager->getPCB(childPid);
         if (child != NULL)
-            child->ppid = -1;  
-            // CHANGE THIS IF NEEDED
+            child->ppid = -1;
     }
-
-
     pcb->children.MakeEmpty();
-    // CHANGE THIS IF NEEDED
 
 
     // --------------------------------------------------------
-    // 2. If parent waiting → wake them
+    // 2. Inform parent (if any)
     // --------------------------------------------------------
     if (pcb->ppid != -1) {
         PCB *parent = processManager->getPCB(pcb->ppid);
 
 
         if (parent != NULL) {
+            parent->childExitValue = status;   // CHANGE THIS IF NEEDED
             parent->waitCond->Broadcast(parent->waitLock);
-            // CHANGE THIS IF NEEDED
         }
     }
 
 
-    // Wake Join() waiters
-    pcb->waitCond->Broadcast(pcb->waitLock);  
-    // CHANGE THIS IF NEEDED
-
-
+    pcb->waitCond->Broadcast(pcb->waitLock);
     pcb->waitLock->Release();
 
 
     // --------------------------------------------------------
-    // 3. FREE ALL PHYSICAL PAGES
+    // 3. Free address space
     // --------------------------------------------------------
     AddrSpace *space = pcb->space;
-    // CHANGE THIS IF NEEDED
 
 
     if (space != NULL) {
         for (unsigned i = 0; i < space->numPages; i++) {
             int phys = space->pageTable[i].physicalPage;
-            memoryManager->clearPage(phys);   // CHANGE THIS IF NEEDED
+            memoryManager->clearPage(phys);  // CHANGE THIS IF NEEDED
         }
+        delete space;
     }
 
 
-    // --------------------------------------------------------
-    // 4. Remove PID & PCB
-    // --------------------------------------------------------
-    processManager->clearPID(myPid);
-    // CHANGE THIS IF NEEDED
+    pcb->space = NULL;
 
 
     // --------------------------------------------------------
-    // 5. End the kernel thread
+    // 4. Remove PID / PCB
     // --------------------------------------------------------
-    currentThread->Finish();  
-    
+    processManager->clearPID(myPid);   // CHANGE THIS IF NEEDED
+
+
+    // --------------------------------------------------------
+    // 5. Finish thread (never returns)
+    // --------------------------------------------------------
+    currentThread->Finish();
 }

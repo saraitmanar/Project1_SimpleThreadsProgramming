@@ -39,19 +39,8 @@ AdvancePC()
     machine->WriteRegister(NextPCReg, nextPC + 4);
 }
 
-// Simple stub for Exit system call.
-// The Exit teammate can replace this with a full implementation later.
-void do_Exit(int status)
-{
-    DEBUG('a', "do_Exit stub called with status %d\n", status);
-
-    // In a full implementation, this should:
-    //  - save the exit status in the thread
-    //  - signal any thread waiting in Join()
-    //  - clean up the address space
-    // For now, just finish this thread.
-    currentThread->Finish();
-}
+extern void do_Exit(int status);
+extern void do_Exec(int filenameAddr);
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -89,6 +78,22 @@ ExceptionHandler(ExceptionType which)
             DEBUG('a', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
             break;
+        
+        case SC_Exit:
+        {
+            int status = machine->ReadRegister(4);
+            do_Exit(status);
+            break;
+        }
+
+        case SC_Exec:
+        {
+            int filenameAddr = machine->ReadRegister(4);
+            int result = do_Exec(filenameAddr);
+            machine->WriteRegister(2, result);
+            AdvancePC(); // Only reached on failure
+            break;
+        }
 
         case SC_Yield:
             // User-level Yield(): just yield the current Nachos thread
@@ -96,15 +101,6 @@ ExceptionHandler(ExceptionType which)
             AdvancePC();   // move past the Yield() syscall
             break;
 
-        case SC_Exit:
-        {
-            int status = machine->ReadRegister(4);   // arg1 = exit status
-            DEBUG('a', "System Call: Exit(%d)\n", status);
-            do_Exit(status);    // stub for now
-            // If do_Exit() ever returns, advance PC so we don't re-execute.
-            AdvancePC();
-            break;
-        }
 
         case SC_Join:
         {
