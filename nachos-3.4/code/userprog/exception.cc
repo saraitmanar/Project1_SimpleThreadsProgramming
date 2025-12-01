@@ -3,7 +3,7 @@
 //  There are two kinds of things that can cause control to
 //  transfer back to here from user code:
 //
- //  syscall -- The user code explicitly requests to call a procedure
+//  syscall -- The user code explicitly requests to call a procedure
 //  in the Nachos kernel.  Right now, the only function we support is
 //  "Halt".
 //
@@ -27,6 +27,7 @@
 
 extern Thread *threadArray[MaxThreads]; 
 
+// Advance the user program counters so we don't repeat the same syscall.
 static void
 AdvancePC()
 {
@@ -36,6 +37,20 @@ AdvancePC()
     machine->WriteRegister(PrevPCReg, pc);
     machine->WriteRegister(PCReg, nextPC);
     machine->WriteRegister(NextPCReg, nextPC + 4);
+}
+
+// Simple stub for Exit system call.
+// The Exit teammate can replace this with a full implementation later.
+void do_Exit(int status)
+{
+    DEBUG('a', "do_Exit stub called with status %d\n", status);
+
+    // In a full implementation, this should:
+    //  - save the exit status in the thread
+    //  - signal any thread waiting in Join()
+    //  - clean up the address space
+    // For now, just finish this thread.
+    currentThread->Finish();
 }
 
 //----------------------------------------------------------------------
@@ -81,8 +96,19 @@ ExceptionHandler(ExceptionType which)
             AdvancePC();   // move past the Yield() syscall
             break;
 
-        case SC_Join: {
-            // Stub for Join system call; real logic will be added
+        case SC_Exit:
+        {
+            int status = machine->ReadRegister(4);   // arg1 = exit status
+            DEBUG('a', "System Call: Exit(%d)\n", status);
+            do_Exit(status);    // stub for now
+            // If do_Exit() ever returns, advance PC so we don't re-execute.
+            AdvancePC();
+            break;
+        }
+
+        case SC_Join:
+        {
+            // Stub for Join system call; real logic will be added later
             SpaceId pid = machine->ReadRegister(4);  // arg1 in r4
             printf("SC_Join called for pid %d (not fully implemented yet)\n", pid);
 
@@ -93,7 +119,7 @@ ExceptionHandler(ExceptionType which)
             break;
         }
 
-        // other syscalls (Exit, Exec, Fork, etc.) go here later
+        // other syscalls (Exec, Fork, etc.) go here later
 
         default:
             printf("Unexpected system call %d\n", type);
