@@ -20,6 +20,10 @@ Timer *timer;				// the hardware timer device,
 					// for invoking context switches
 Thread *threadArray[MaxThreads];
 
+int nextPid = 1;
+Thread* processTable[128];  
+
+
 #ifdef FILESYS_NEEDED
 FileSystem  *fileSystem;
 #endif
@@ -81,6 +85,10 @@ Initialize(int argc, char **argv)
     int argCount;
     const char* debugArgs = "";
     bool randomYield = FALSE;
+    for (int i = 0; i < 128; i++) {
+    processTable[i] = NULL;
+}
+
 
 #ifdef USER_PROGRAM
     bool debugUserProg = FALSE;	// single step user program

@@ -15,11 +15,17 @@
 
 #include "copyright.h"
 #include "filesys.h"
+class MemoryManager;
+extern MemoryManager *memoryManager;
+
 
 #define UserStackSize		1024 	// increase this as necessary!
 
 class AddrSpace {
   public:
+  unsigned int getNumPages() { return numPages; }
+  TranslationEntry* getPageTable() { return pageTable; }
+
     AddrSpace(OpenFile *executable);	// Create an address space,
 					// initializing it with the program
 					// stored in the file "executable"
@@ -37,5 +43,6 @@ class AddrSpace {
     unsigned int numPages;		// Number of pages in the virtual 
 					// address space
 };
+//extern MemoryManager *memoryManager;
 
 #endif // ADDRSPACE_H

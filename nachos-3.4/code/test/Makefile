@@ -37,9 +37,13 @@ CPP = gcc -E
 INCDIR = -I../userprog -I../threads
 CFLAGS = -G 0 -c $(INCDIR)
 
+<<<<<<< HEAD
 # ---------- Professor's required user programs ----------
 # (exactly as in the assignment)
 all: halt shell matmult sort fork join kill exec memory
+=======
+all: halt shell matmult sort ytest exit exec test_kill
+>>>>>>> 5c55802273dc838c0b094423ebf962968475244f
 
 start.o: start.s ../userprog/syscall.h
 	$(CPP) $(CPPFLAGS) start.c > strt.s
@@ -103,4 +107,19 @@ matmult.o: matmult.c
 matmult: matmult.o start.o
 	$(LD) $(LDFLAGS) start.o matmult.o -o matmult.coff
 	../bin/coff2noff matmult.coff matmult
+
+exit.o: exit.c
+	$(CC) $(CFLAGS) -c exit.c
+exit: exit.o start.o
+	$(LD) $(LDFLAGS) start.o exit.o -o exit.coff
+	../bin/coff2noff exit.coff exit
+
+exec.o: exec.c
+	$(CC) $(CFLAGS) -c exec.c
+exec: exec.o start.o
+	$(LD) $(LDFLAGS) start.o exec.o -o exec.coff
+	../bin/coff2noff exec.coff exec
+test_kill: test_kill.o start.o
+	$(LD) $(LDFLAGS) test_kill.o start.o -o test_kill.coff
+	$(COFF2NOFF) test_kill.coff test_kill
 

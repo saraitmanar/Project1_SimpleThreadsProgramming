@@ -34,8 +34,7 @@ Thread::Thread(const char* threadName)
     spaceId = -1;                       // “no pid” initially
     exitCode = 0;                       // default exit status
 
-    // We keep these allocated for compatibility with other designs,
-    // but our Join implementation will NOT depend on them.
+ 
     joinSem = new Semaphore((char*)"joinSem", 0);
     waitingThread = NULL;
 #endif
@@ -75,8 +74,8 @@ Thread::Fork(VoidFunctionPtr func, int arg)
     StackAllocate(func, arg);
 
     IntStatus oldLevel = interrupt->SetLevel(IntOff);
-    scheduler->ReadyToRun(this);    // ReadyToRun assumes that interrupts 
-                                    // are disabled!
+    scheduler->ReadyToRun(this);    
+                                    
     (void) interrupt->SetLevel(oldLevel);
 }    
 

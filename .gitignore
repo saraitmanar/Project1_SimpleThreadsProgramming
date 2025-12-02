@@ -1,0 +1,58 @@
+# Compiled object files
+*.o
+*.obj
+
+# Compiled binary programs
+*.exe
+*.out
+*.app
+*.dll
+*.so
+*.dylib
+
+# Static & shared libraries
+*.a
+*.lib
+
+# Debugging / profiling
+*.gch
+*.pch
+*.pdb
+*.dSYM/
+*.stackdump
+
+# Build directories
+/build/
+/bin/
+/target/
+/dist/
+/debug/
+/release/
+
+# CMake
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Make
+*.d
+
+# IDEs/editors
+# VSCode
+.vscode/
+# CLion
+.idea/
+# Xcode
+*.xcworkspace
+*.xcuserstate
+*.xcuserdata/
+*.xcodeproj/
+# Eclipse
+.project
+.cproject
+
+# Misc
+*.log
+*.swp
+*.DS_Store

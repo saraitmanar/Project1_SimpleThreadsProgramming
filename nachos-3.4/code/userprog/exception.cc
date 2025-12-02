@@ -4,8 +4,7 @@
 //  transfer back to here from user code:
 //
 //  syscall -- The user code explicitly requests to call a procedure
-//  in the Nachos kernel.  Right now, the only function we support is
-//  "Halt".
+//  in the Nachos kernel.
 //
 //  exceptions -- The user code does something that the CPU can't handle.
 //  For instance, accessing memory that doesn't exist, arithmetic errors,
@@ -14,8 +13,7 @@
 //  Interrupts (which can also cause control to transfer from user
 //  code into the Nachos kernel) are handled elsewhere.
 //
-//  For now, this only handles the Halt() system call, plus
-//  Yield, Exit, Exec, and Join that we added.
+//  For now, this handles Halt plus Yield, Exit, Exec, and Join.
 //  Everything else core dumps.
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
@@ -36,7 +34,7 @@
 // and Join keeps checking if that pid is finished, yielding in between.
 // ----------------------------------------------------------------------
 static int  exitStatus[MaxThreads];
-static bool finished[MaxThreads];    // defaults to false at startup
+static bool finished[MaxThreads];    // statically zero-initialized
 
 // Advance the user program counters so we don't repeat the same syscall.
 static void
@@ -119,9 +117,7 @@ ExceptionHandler(ExceptionType which)
 #endif
             // Finish this thread (never returns).
             currentThread->Finish();
-
-            // If Finish() ever returned (it shouldn't), don't re-execute syscall.
-            AdvancePC();
+            // No AdvancePC() needed here since we never return.
             break;
         }
 
@@ -195,7 +191,7 @@ ExceptionHandler(ExceptionType which)
                 break;
             }
 
-            // Simple implementation guide behavior:
+            // Implementation guide behavior:
             // "keep on checking if the requested process is finished.
             //  if not, yield the current process."
             while (!finished[childPid]) {
@@ -215,15 +211,23 @@ ExceptionHandler(ExceptionType which)
 
         case SC_Fork:
         {
-            // Temporary stub for Fork; real implementation is teammate's job.
-            DEBUG('a', "System Call: %d invoked Fork (stub, not implemented)\n", pid);
-
-            machine->WriteRegister(2, -1);  // indicate failure
+            // Stub for Fork; teammate's part.
+            DEBUG('a', "System Call: %d invoked Fork (not implemented here)\n", pid);
+            machine->WriteRegister(2, -1);
             AdvancePC();
             break;
         }
 
-        // other syscalls (Kill, etc.) go here later
+        case SC_Kill:
+        {
+            // Stub for Kill; teammate's part.
+            int targetPid = machine->ReadRegister(4);
+            DEBUG('a', "System Call: %d invoked Kill(%d) (not implemented here)\n",
+                  pid, targetPid);
+            machine->WriteRegister(2, -1);
+            AdvancePC();
+            break;
+        }
 
         default:
             printf("Unexpected system call %d\n", type);

@@ -1,6 +1,6 @@
 Manar Alhamad, Deijen Severino, Dorreen Vahidiazar
 
-
+Manar - report
 * Implemented Yield:
   - Added support for the user-level Yield system call.
   - Mapped SC_Yield to Thread::Yield() and advanced the program counter.
@@ -11,4 +11,13 @@ Manar Alhamad, Deijen Severino, Dorreen Vahidiazar
   - Stored and returned the child’s exit status through the Join system call.
   - Ensured correctness by testing with the provided join.c program.
 
+Deijen - report
+Implemented Exit:
+When Exit(status) is called, the system now prints the required line: Process [pid] exits with [status]. Marks the PCB as exited and stores the exit status. Wakes up any parent process that is waiting with Join(). Removes children by clearing their parent pointers. Frees all physical pages used by the exiting process. Releases the PID and removes the PCB from the process manager. The system terminates the thread with currentThread->Finish().
+Implemented Exec: Prints the required line when Exec is invoked: Exec Program: [pid] loading [name]. Reads the filename from user memory using the pointer in Register 4. Opens the executable file; if the file does not exist, returns -1. Deletes the old AddrSpace of the current process. Creates a new AddrSpace using the loaded executable. Initializes user registers and replaces the current program with the new image. Returns 1 to indicate successful exec, then immediately jumps into user mode using machine->Run().
 
+
+Dorreen - report 
+fork(): I implemented memmanage.h and memmanage.cc and then added them to Makefile.common. I added getters to the constructor so I can access numPages and pageTable from AddrSpace. Thread(char*) kept causing mismatch error; I removed it. I could not complete full register copying, PCB system, Join but it works as it copied memory, assigns a PID and runs the child thread.
+
+kill(): I added a case "SC_Kill" in exception.cc, defined do_Kill(int) that finds the target thread and prints required message, frees its pages through Exit and finishes. I also added getters in AddrSpace for Kill() so it worked. I couldn't get true PCB table and parent-child tracking working for this part of assignment.
