@@ -32,13 +32,11 @@
 #endif
 
 // ----------------------------------------------------------------------
-// Simple bookkeeping for Exit/Join without PCB/ProcessManager.
-// We just record exit status per pid, and Join busy-waits with Yield,
-// as described in the implementation guide.
+// Simple bookkeeping for Exit/Join. We store the exit status per pid,
+// and Join keeps checking if that pid is finished, yielding in between.
 // ----------------------------------------------------------------------
-
 static int  exitStatus[MaxThreads];
-static bool finished[MaxThreads];    // false by default
+static bool finished[MaxThreads];    // defaults to false at startup
 
 // Advance the user program counters so we don't repeat the same syscall.
 static void
@@ -113,9 +111,7 @@ ExceptionHandler(ExceptionType which)
             printf("Process %d exits with %d\n", pid, status);
 
 #ifdef USER_PROGRAM
-            currentThread->exitCode = status;
-
-            // Record exit status so Join(pid) can retrieve it later.
+            // Record exit status and mark as finished so Join() can see it.
             if (pid >= 0 && pid < MaxThreads) {
                 exitStatus[pid] = status;
                 finished[pid]   = true;
@@ -149,7 +145,7 @@ ExceptionHandler(ExceptionType which)
                 break;
             }
 
-            // Throw away old address space (simple version).
+            // Replace old address space with a new one for this program.
             AddrSpace *oldSpace = currentThread->space;
             if (oldSpace != NULL) {
                 delete oldSpace;
@@ -188,7 +184,7 @@ ExceptionHandler(ExceptionType which)
 
         case SC_Join:
         {
-            int childPid = machine->ReadRegister(4);  // arg1 in r4
+            SpaceId childPid = machine->ReadRegister(4);  // arg1 in r4
             DEBUG('a', "System Call: %d invoked Join(%d)\n", pid, childPid);
 
 #ifdef USER_PROGRAM
@@ -199,34 +195,35 @@ ExceptionHandler(ExceptionType which)
                 break;
             }
 
-            // Simple implementation guide version:
-            // keep checking if the requested process is finished;
-            // if not, yield the current process.
+            // Simple implementation guide behavior:
+            // "keep on checking if the requested process is finished.
+            //  if not, yield the current process."
             while (!finished[childPid]) {
                 currentThread->Yield();
             }
 
-            // Once finished, return the child's exit status in r2.
+            // Return the child's exit code in r2
             machine->WriteRegister(2, exitStatus[childPid]);
 #else
+            // If somehow no USER_PROGRAM, just return -1
             machine->WriteRegister(2, -1);
 #endif
+
             AdvancePC();
             break;
         }
 
-        // Stubs for unimplemented syscalls (Fork, Kill, etc.)
         case SC_Fork:
-            printf("SC_Fork not implemented in this version.\n");
-            machine->WriteRegister(2, -1);
-            AdvancePC();
-            break;
+        {
+            // Temporary stub for Fork; real implementation is teammate's job.
+            DEBUG('a', "System Call: %d invoked Fork (stub, not implemented)\n", pid);
 
-        case SC_Kill:
-            printf("SC_Kill not implemented in this version.\n");
-            machine->WriteRegister(2, -1);
+            machine->WriteRegister(2, -1);  // indicate failure
             AdvancePC();
             break;
+        }
+
+        // other syscalls (Kill, etc.) go here later
 
         default:
             printf("Unexpected system call %d\n", type);
@@ -234,6 +231,7 @@ ExceptionHandler(ExceptionType which)
         }
 
     } else {
+        // Non-syscall user-mode exceptions (page faults, illegal op, etc.)
         printf("Unexpected user mode exception %d %d\n", which, type);
         ASSERT(FALSE);
     }
