@@ -55,6 +55,9 @@
 #define StackSize   (4 * 1024)    // in words
 #define MaxThreads  128
 
+
+
+
 // Thread state
 enum ThreadStatus { JUST_CREATED, RUNNING, READY, BLOCKED };
 
@@ -98,6 +101,8 @@ class Thread {
 
     int userRegisters[NumTotalRegs];      // user-level CPU register state
   public:
+    int pid;
+
     void SaveUserState();                 // save user-level register state
     void RestoreUserState();              // restore user-level register state
 

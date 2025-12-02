@@ -38,14 +38,15 @@ Thread::Thread(const char* threadName)
     stackTop = NULL;
     stack = NULL;
     status = JUST_CREATED;
+
 #ifdef USER_PROGRAM
     space = NULL;
-    spaceId = -1;                       // “no pid” initially
-    exitCode = 0;                       // default exit status
-    joinSem = new Semaphore((char*)"joinSem", 0);  // used for Join()
-    waitingThread = NULL;               // no one is waiting yet
+    spaceId = -1;
+    exitCode = 0;
+    joinSem = new Semaphore((char*)"joinSem", 0);
+    waitingThread = NULL;
+    pid = -1;          // <-- ADD THIS HERE
 #endif
-
 }
 
 //----------------------------------------------------------------------

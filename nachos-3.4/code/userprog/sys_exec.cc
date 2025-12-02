@@ -1,58 +1,60 @@
 #include "system.h"
-#include "syscall.h"
+#include "addrspace.h"
+#include "memmanage.h"
 
-
-extern void AdvancePC();
-
-
-static void copyUserString(int virtAddr, char *buffer, int max)
+static void ExecStart(int arg)
 {
-    int ch;
-    for (int i = 0; i < max - 1; i++) {
-        machine->ReadMem(virtAddr + i, 1, &ch);
-        buffer[i] = (char)ch;
-        if (ch == '\0') return;
-    }
-    buffer[max - 1] = '\0';
+    currentThread->space->InitRegisters();
+    currentThread->space->RestoreState();
+    machine->Run();          // run user code, never returns
+    ASSERT(FALSE);           // just in case
 }
 
-
-int do_Exec(int filenameAddr)
+// -------------------------------------------------------------
+// do_Exec(filenameAddr)
+// filenameAddr: user virtual address of a null-terminated string
+// Returns (in r2) the pid of the new process, or -1 on failure.
+// -------------------------------------------------------------
+void do_Exec(int filenameAddr)
 {
     char filename[256];
-    copyUserString(filenameAddr, filename, 256);
+    int value;
+    int i;
 
+    for (i = 0; i < 255; i++) {
+        if (!machine->ReadMem(filenameAddr + i, 1, &value)) {
+            // On read failure, return -1
+            machine->WriteRegister(2, -1);
+            return;
+        }
+        filename[i] = (char)value;
+        if (filename[i] == '\0')
+            break;
+    }
+    filename[255] = '\0';
 
     OpenFile *executable = fileSystem->Open(filename);
     if (executable == NULL) {
-        printf("Exec: cannot open %s\n", filename);
-        return -1;
+        printf("Unable to open file %s\n", filename);
+        machine->WriteRegister(2, -1);
+        return;
     }
 
-
-    AddrSpace *oldSpace = currentThread->space;
-    delete oldSpace;
+    Thread *t = new Thread(filename);   
 
 
-    AddrSpace *newSpace = new AddrSpace(executable);
-    if (newSpace == NULL) {
-        printf("Exec: cannot create address space for %s\n", filename);
-        delete executable;
-        return -1;
-    }
+    static int nextPid = 1;
+    t->pid = nextPid++;
+
+
+    AddrSpace *space = new AddrSpace(executable);
     delete executable;
 
+    t->space = space;
 
-    currentThread->space = newSpace;
+    IntStatus oldLevel = interrupt->SetLevel(IntOff);
+    t->Fork(ExecStart, 0);
+    interrupt->SetLevel(oldLevel);
 
-
-    newSpace->InitRegisters();
-    newSpace->RestoreState();
-
-    machine->WriteRegister(2, 1);
-
-    machine->Run();
-
-
-    return -1;
+    machine->WriteRegister(2, t->pid);
 }

@@ -41,6 +41,8 @@ AdvancePC()
 
 extern void do_Exit(int status);
 extern void do_Exec(int filenameAddr);
+extern void do_Kill(int pid);
+
 
 //----------------------------------------------------------------------
 // ExceptionHandler
@@ -89,8 +91,9 @@ ExceptionHandler(ExceptionType which)
         case SC_Exec:
         {
             int filenameAddr = machine->ReadRegister(4);
-            int result = do_Exec(filenameAddr);
-            machine->WriteRegister(2, result);
+            //int result = do_Exec(filenameAddr);
+            //machine->WriteRegister(2, result);
+            do_Exec(filenameAddr);
             AdvancePC(); // Only reached on failure
             break;
         }
@@ -112,6 +115,13 @@ ExceptionHandler(ExceptionType which)
             machine->WriteRegister(2, -1);
 
             AdvancePC();
+            break;
+        }
+        
+        case SC_Kill: 
+        {
+            int targetPid = machine->ReadRegister(4);
+            do_Kill(targetPid);
             break;
         }
 

@@ -13,7 +13,8 @@
 #include "console.h"
 #include "addrspace.h"
 #include "synch.h"
-
+#include "memmanage.h"
+MemoryManager *memoryManager = NULL;
 //----------------------------------------------------------------------
 // StartProcess
 // 	Run a user program.  Open the executable, load it into
@@ -23,6 +24,11 @@
 void
 StartProcess(char *filename)
 {
+    if (memoryManager == NULL) {
+    memoryManager = new MemoryManager(NumPhysPages);
+}
+    
+
     OpenFile *executable = fileSystem->Open(filename);
     AddrSpace *space;
 

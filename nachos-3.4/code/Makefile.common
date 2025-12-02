@@ -80,6 +80,7 @@ USERPROG_H = ../userprog/addrspace.h\
 
 USERPROG_C = ../userprog/addrspace.cc\
 	../userprog/bitmap.cc\
+	../userprog/sys_kill.cc\
 	../userprog/exception.cc\
 	../userprog/sys_exit.cc\
 	../userprog/sys_exec.cc\
@@ -87,10 +88,11 @@ USERPROG_C = ../userprog/addrspace.cc\
 	../machine/console.cc\
 	../machine/machine.cc\
 	../machine/mipssim.cc\
+	../userprog/memmanage.cc \
 	../machine/translate.cc
 
 USERPROG_O = addrspace.o bitmap.o exception.o progtest.o console.o machine.o \
-	mipssim.o translate.o sys_exit.o sys_exec.o
+	mipssim.o translate.o sys_exit.o sys_exec.o memmanage.o sys_kill.o
 
 VM_H = 
 VM_C = 
