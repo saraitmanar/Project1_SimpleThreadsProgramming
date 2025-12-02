@@ -1,0 +1,14 @@
+Manar Alhamad, Deijen Severino, Dorreen Vahidiazar
+
+
+* Implemented Yield:
+  - Added support for the user-level Yield system call.
+  - Mapped SC_Yield to Thread::Yield() and advanced the program counter.
+  - Verified that user programs can voluntarily give up the CPU correctly.
+
+* Implemented Join:
+  - Used per-thread semaphores to block the parent until the child calls Exit().
+  - Stored and returned the child’s exit status through the Join system call.
+  - Ensured correctness by testing with the provided join.c program.
+
+
