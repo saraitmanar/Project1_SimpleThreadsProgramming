@@ -14,8 +14,9 @@
 //  Interrupts (which can also cause control to transfer from user
 //  code into the Nachos kernel) are handled elsewhere.
 //
-// For now, this only handles the Halt() system call (plus Yield we added).
-// Everything else core dumps.
+//  For now, this only handles the Halt() system call, plus
+//  Yield, Exit, Exec, and Join that we added.
+//  Everything else core dumps.
 //
 // Copyright (c) 1992-1993 The Regents of the University of California.
 // All rights reserved.  See copyright.h for copyright notice and limitation 
@@ -25,13 +26,25 @@
 #include "system.h"
 #include "syscall.h"
 
-extern Thread *threadArray[MaxThreads]; 
+#ifdef USER_PROGRAM
+#include "addrspace.h"
+#include "filesys.h"
+#endif
+
+// ----------------------------------------------------------------------
+// Simple bookkeeping for Exit/Join without PCB/ProcessManager.
+// We just record exit status per pid, and Join busy-waits with Yield,
+// as described in the implementation guide.
+// ----------------------------------------------------------------------
+
+static int  exitStatus[MaxThreads];
+static bool finished[MaxThreads];    // false by default
 
 // Advance the user program counters so we don't repeat the same syscall.
 static void
 AdvancePC()
 {
-    int pc = machine->ReadRegister(PCReg);
+    int pc     = machine->ReadRegister(PCReg);
     int nextPC = machine->ReadRegister(NextPCReg);
 
     machine->WriteRegister(PrevPCReg, pc);
@@ -39,41 +52,27 @@ AdvancePC()
     machine->WriteRegister(NextPCReg, nextPC + 4);
 }
 
-// Simple stub for Exit system call.
-// The Exit teammate can replace this with a full implementation later.
-void do_Exit(int status)
+// Copy a user string (from virtual memory) into a kernel buffer.
+// Used by Exec to read the filename from r4.
+static void
+CopyUserString(int virtAddr, char *buffer, int maxLen)
 {
-    DEBUG('a', "do_Exit stub called with status %d\n", status);
-
-    // In a full implementation, this should:
-    //  - save the exit status in the thread
-    //  - signal any thread waiting in Join()
-    //  - clean up the address space
-    // For now, just finish this thread.
-    currentThread->Finish();
+    int ch;
+    for (int i = 0; i < maxLen - 1; i++) {
+        if (!machine->ReadMem(virtAddr + i, 1, &ch)) {
+            buffer[i] = '\0';
+            return;
+        }
+        buffer[i] = (char)ch;
+        if (ch == 0) {
+            return;
+        }
+    }
+    buffer[maxLen - 1] = '\0';
 }
 
 //----------------------------------------------------------------------
 // ExceptionHandler
-//  Entry point into the Nachos kernel.  Called when a user program
-//  is executing, and either does a syscall, or generates an addressing
-//  or arithmetic exception.
-//
-//  For system calls, the following is the calling convention:
-//
-//  system call code -- r2
-//      arg1 -- r4
-//      arg2 -- r5
-//      arg3 -- r6
-//      arg4 -- r7
-//
-//  The result of the system call, if any, must be put back into r2. 
-//
-//  And don't forget to increment the pc before returning. (Or else you'll
-//  loop making the same system call forever!)
-//
-//  "which" is the kind of exception.  The list of possible exceptions 
-//  are in machine.h.
 //----------------------------------------------------------------------
 
 void
@@ -83,15 +82,23 @@ ExceptionHandler(ExceptionType which)
 
     if (which == SyscallException) {
 
+        // current process id (SpaceId); if not set yet, just -1.
+        int pid = -1;
+#ifdef USER_PROGRAM
+        pid = currentThread->spaceId;
+#endif
+
         switch (type) {
 
         case SC_Halt:
+            DEBUG('a', "System Call: %d invoked Halt\n", pid);
             DEBUG('a', "Shutdown, initiated by user program.\n");
             interrupt->Halt();
             break;
 
         case SC_Yield:
             // User-level Yield(): just yield the current Nachos thread
+            DEBUG('a', "System Call: %d invoked Yield\n", pid);
             currentThread->Yield();
             AdvancePC();   // move past the Yield() syscall
             break;
@@ -99,27 +106,127 @@ ExceptionHandler(ExceptionType which)
         case SC_Exit:
         {
             int status = machine->ReadRegister(4);   // arg1 = exit status
-            DEBUG('a', "System Call: Exit(%d)\n", status);
-            do_Exit(status);    // stub for now
-            // If do_Exit() ever returns, advance PC so we don't re-execute.
+            DEBUG('a', "System Call: %d invoked Exit(%d)\n", pid, status);
+
+            // Required print from project spec:
+            // Process [pid] exits with [status]
+            printf("Process %d exits with %d\n", pid, status);
+
+#ifdef USER_PROGRAM
+            currentThread->exitCode = status;
+
+            // Record exit status so Join(pid) can retrieve it later.
+            if (pid >= 0 && pid < MaxThreads) {
+                exitStatus[pid] = status;
+                finished[pid]   = true;
+            }
+#endif
+            // Finish this thread (never returns).
+            currentThread->Finish();
+
+            // If Finish() ever returned (it shouldn't), don't re-execute syscall.
             AdvancePC();
+            break;
+        }
+
+        case SC_Exec:
+        {
+#ifdef USER_PROGRAM
+            int filenameAddr = machine->ReadRegister(4);
+            DEBUG('a', "System Call: %d invoked Exec\n", pid);
+
+            char filename[256];
+            CopyUserString(filenameAddr, filename, 256);
+
+            // Required debug print
+            printf("Exec Program: %d loading %s\n", pid, filename);
+
+            OpenFile *executable = fileSystem->Open(filename);
+            if (executable == NULL) {
+                printf("Exec: cannot open %s\n", filename);
+                machine->WriteRegister(2, -1);
+                AdvancePC();
+                break;
+            }
+
+            // Throw away old address space (simple version).
+            AddrSpace *oldSpace = currentThread->space;
+            if (oldSpace != NULL) {
+                delete oldSpace;
+            }
+
+            AddrSpace *newSpace = new AddrSpace(executable);
+            delete executable;
+
+            if (newSpace == NULL) {
+                printf("Exec: cannot create address space for %s\n", filename);
+                machine->WriteRegister(2, -1);
+                AdvancePC();
+                break;
+            }
+
+            currentThread->space = newSpace;
+
+            newSpace->InitRegisters();
+            newSpace->RestoreState();
+
+            // Spec: write 1 to r2 indicating Exec() succeeded.
+            machine->WriteRegister(2, 1);
+
+            // Start the new program. Does not return on success.
+            machine->Run();
+
+            // If we reach here, machine->Run() returned unexpectedly.
+            machine->WriteRegister(2, -1);
+            AdvancePC();
+#else
+            machine->WriteRegister(2, -1);
+            AdvancePC();
+#endif
             break;
         }
 
         case SC_Join:
         {
-            // Stub for Join system call; real logic will be added later
-            SpaceId pid = machine->ReadRegister(4);  // arg1 in r4
-            printf("SC_Join called for pid %d (not fully implemented yet)\n", pid);
+            int childPid = machine->ReadRegister(4);  // arg1 in r4
+            DEBUG('a', "System Call: %d invoked Join(%d)\n", pid, childPid);
 
-            // For now, return -1 so user programs don't crash
+#ifdef USER_PROGRAM
+            // Basic range check
+            if (childPid < 0 || childPid >= MaxThreads) {
+                machine->WriteRegister(2, -1);  // error
+                AdvancePC();
+                break;
+            }
+
+            // Simple implementation guide version:
+            // keep checking if the requested process is finished;
+            // if not, yield the current process.
+            while (!finished[childPid]) {
+                currentThread->Yield();
+            }
+
+            // Once finished, return the child's exit status in r2.
+            machine->WriteRegister(2, exitStatus[childPid]);
+#else
             machine->WriteRegister(2, -1);
-
+#endif
             AdvancePC();
             break;
         }
 
-        // other syscalls (Exec, Fork, etc.) go here later
+        // Stubs for unimplemented syscalls (Fork, Kill, etc.)
+        case SC_Fork:
+            printf("SC_Fork not implemented in this version.\n");
+            machine->WriteRegister(2, -1);
+            AdvancePC();
+            break;
+
+        case SC_Kill:
+            printf("SC_Kill not implemented in this version.\n");
+            machine->WriteRegister(2, -1);
+            AdvancePC();
+            break;
 
         default:
             printf("Unexpected system call %d\n", type);
